@@ -1,2 +1,2 @@
 echo "__pycache__/" > .gitignore
-echo "*.ipynb_checkpoints" >> .gitignore # Si vous utilisez des notebook
+echo "*.ipynb_checkpoints" >> .gitignore
