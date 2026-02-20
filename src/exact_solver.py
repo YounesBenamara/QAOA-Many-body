@@ -4,7 +4,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import qctrlvisualizer as qv
 from scipy.sparse.linalg import eigsh
-
+from qiskit.quantum_info import Statevector, partial_trace, entropy
 
 def clean(arr, tol=1e-15):
     arr = arr.copy()
@@ -12,7 +12,7 @@ def clean(arr, tol=1e-15):
     return arr
 
 
-N = 12 # qubit number
+N = 6 # qubit number
 
 # --- Lattice structure as a graph ---
 def draw_lattice():
@@ -63,6 +63,11 @@ def print_hamiltonian_matrix(N, g):
     print(H_mat)
 
 ## -- structure factor ---
+''' The goal is to observe a shift in the spin structure factor
+    which measures the spin correlation between the qubit, we shall
+    find that for the ordered phase (g<1, the spins are mostly
+    aligned) the factor is closest to 1 and vice versa for the 
+    disordered phase'''
 def get_szz_factor(N, g):
 
     ''' Since we're calling compute_lowest_energies, 
@@ -83,54 +88,82 @@ def get_szz_factor(N, g):
     # N addition contributions Zi*Zi
     S = np.real(np.vdot(psi0, ZZ_total @ psi0)) + N
     
-    return S / N**2, vals[0], vals[1]
+    return S / N**2, vals[0], vals[1], psi0
 
+
+# --- Von Neumann entropy---
+def vneumann_entropy(psi, trace_out_indices: list):
+    #partial trace
+    rho= partial_trace(psi, trace_out_indices)
+    return entropy(rho)
 
 if __name__ == "__main__":
-    
-    # --- Parameters for the sweep ---
+
     g_values = np.linspace(0, 3, 50)
-    N_list = [4, 6, 8, 10, 12, 14]
-    
-    fig_S, ax_S = plt.subplots(figsize=(8, 6))
+
+ 
+    # 1) Energy densities E0/N and E1/N (global N)
+  
+    E0_values = np.zeros_like(g_values)
+    E1_values = np.zeros_like(g_values)
+
+    for idx, g in enumerate(g_values):
+        vals, _ = compute_lowest_energies(N, g)
+        E0_values[idx] = vals[0] / N
+        E1_values[idx] = vals[1] / N
+
     fig_E, ax_E = plt.subplots(figsize=(8, 6))
-    
+    ax_E.plot(g_values, E0_values, color='b', linewidth=2.2, label=f"$E_0/N$")
+    ax_E.plot(g_values, E1_values, color='g', linewidth=2.2, label=f"$E_1/N$")
+    ax_E.axvline(x=1.0, color="#FF5722", linestyle="--", alpha=0.7, label=r"$g_c = 1$")
+    ax_E.set_xlabel("Transverse field strength g", fontsize=13)
+    ax_E.set_ylabel("Energy Density E/N", fontsize=13)
+    ax_E.set_title(f"Lowest energy densities vs g (N={N})", fontsize=14)
+    ax_E.legend(fontsize=11)
+    ax_E.grid(True, alpha=0.3)
+    fig_E.tight_layout()
+    fig_E.savefig(f"figures/energy_density_N={N}.png", dpi=300, bbox_inches='tight')
+
+
+    # 2) Structure factor & Von Neumann entropy for multiple N values
+   
+    N_list = [4, 6, 8, 10, 12, 14]
     colors = plt.cm.coolwarm(np.linspace(0, 1, len(N_list)))
 
-    for i, N in enumerate(N_list):
-        S_values = np.zeros_like(g_values)
-        E0_values = np.zeros_like(g_values)
-        E1_values = np.zeros_like(g_values)
-        
-        for idx, g in enumerate(g_values):
-            S, E0, E1 = get_szz_factor(N, g)
-            S_values[idx] = S
-            E0_values[idx] = E0 / N
-            E1_values[idx] = E1 / N
-            
-        ax_S.plot(g_values, S_values, color=colors[i], linewidth=2.2, label=f"N = {N}")
-        
-        if N == 6:
-            ax_E.plot(g_values, E0_values, color='b', linestyle='-', linewidth=2.2, label=f"E0/N (N={N})")
-            ax_E.plot(g_values, E1_values, color='g', linestyle='-', linewidth=2.2, label=f"E1/N (N={N})")
+    fig_S, ax_S = plt.subplots(figsize=(8, 6))
+    fig_SvN, ax_SvN = plt.subplots(figsize=(8, 6))
 
+    for i, Ni in enumerate(N_list):
+        trace_out_indices = list(range(Ni // 2, Ni))
+        L = Ni // 2
+
+        S_values = np.zeros_like(g_values)
+        SvN_values = np.zeros_like(g_values)
+
+        for idx, g in enumerate(g_values):
+            S, _, _, psi0 = get_szz_factor(Ni, g)
+            S_values[idx] = S
+            SvN_values[idx] = vneumann_entropy(Statevector(psi0), trace_out_indices)
+
+        ax_S.plot(g_values, S_values, color=colors[i], linewidth=2.2, label=f"N={Ni}")
+        ax_SvN.plot(g_values, SvN_values, color=colors[i], linewidth=2.2, label=f"N={Ni}")
+
+    # --- Structure factor plot ---
     ax_S.axvline(x=1.0, color="#FF5722", linestyle="--", alpha=0.7, label=r"$g_c = 1$")
-    ax_S.set_xlabel(r"Transverse field strength $g$", fontsize=13)
-    ax_S.set_ylabel(r"Structure factor $S$", fontsize=13)
-    ax_S.set_title("Magnetic structure factor vs g for diff N", fontsize=14)
+    ax_S.set_xlabel("Transverse field strength g", fontsize=13)
+    ax_S.set_ylabel("Structure factor S", fontsize=13)
+    ax_S.set_title("Magnetic structure factor vs g", fontsize=14)
     ax_S.legend(fontsize=11)
     ax_S.grid(True, alpha=0.3)
-
-    ax_E.axvline(x=1.0, color="#FF5722", linestyle="--", alpha=0.7, label=r"$g_c = 1$")
-    ax_E.set_xlabel(r"Transverse field strength $g$", fontsize=13)
-    ax_E.set_ylabel(r"Energy Density $E/N$", fontsize=13)
-    ax_E.set_title("Lowest energies density vs g (N=6)", fontsize=14)
-    ax_E.legend(fontsize=9, bbox_to_anchor=(1.05, 1), loc='upper left')
-    ax_E.grid(True, alpha=0.3)
-
-    plt.tight_layout()  
-    
+    fig_S.tight_layout()
     fig_S.savefig("figures/structure_factor.png", dpi=300, bbox_inches='tight')
-    fig_E.savefig("figures/energy_density_N=6.png", dpi=300, bbox_inches='tight')
-    
-   
+
+    # --- Von Neumann entropy plot ---
+    ax_SvN.axvline(x=1.0, color="#FF5722", linestyle="--", alpha=0.7, label=r"$g_c = 1$")
+    ax_SvN.set_xlabel("Transverse field strength g", fontsize=13)
+    ax_SvN.set_ylabel(r"$S_{vN}$", fontsize=13)
+    ax_SvN.set_title(r"Von Neumann bipartite entropy vs $g$ (half-chain)", fontsize=14)
+    ax_SvN.legend(fontsize=11)
+    ax_SvN.grid(True, alpha=0.3)
+    fig_SvN.tight_layout()
+    fig_SvN.savefig("figures/VNeumann_entropy.png", dpi=300, bbox_inches='tight')
