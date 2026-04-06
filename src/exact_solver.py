@@ -2,7 +2,6 @@ from qiskit.quantum_info import SparsePauliOp
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-import qctrlvisualizer as qv
 from scipy.sparse.linalg import eigsh
 from qiskit.quantum_info import Statevector, partial_trace, entropy
 

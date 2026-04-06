@@ -31,3 +31,5 @@ figures/
 # --- Sécurité & Config (NE JAMAIS PUSHER) ---
 .env
 qiskit-runtime.json
+setup_ibm.py
+apikey.json
