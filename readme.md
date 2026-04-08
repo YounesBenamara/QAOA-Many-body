@@ -59,6 +59,25 @@ Variational_Ising_QPT/
 │   └── vqe_v3_hardware.py
 └── README.md
 ```
+## File Descriptions
+
+The implementation is divided between the source logic and the recorded execution data.
+
+### Source logic (src/)
+
+* exact_solver.py: Constructs the TFIM Hamiltonian and performs exact diagonalization to obtain the ground state energy and physical observables such as the magnetic structure factor and von Neumann entropy.
+* vqe_v1.py: Implements a baseline Variational Quantum Eigensolver using Qiskit native optimizers SPSA and COBYLA for noiseless and fake noisy backends provided by IBM.
+* vqe_v2.py: Features an advanced VQE workflow with a fine-tuned SPSA loop and asymptotic testing to define optimizer's number of iterations.
+* vqe_v3_hardware.py: Script specifically optimized for deploying variational jobs to real IBM Quantum processors via the Qiskit Runtime service.
+* spsa_optimizer.py: Defines the stochastic optimizer logic including the adaptive learning rates and gradient estimation used in the variational routines, still in progress.
+* g_comparison.py: Automates the calculation of ground state properties across a range of transverse field values to map the phase transition.
+* layers_comparison.py: Compares circuit performance across different hardware-efficient ansatz depths to find the optimal parameter ratio for the target system.
+* iteration.md: Provides the mathematical background and criteria for the diagnostic tests used to identify optimizer flattening and determine convergence.
+
+### Execution results (runs/)
+
+* vqe_fake_marrakesh/: Contains datasets and cost function histories generated from simulations using the noisy fake Marrakesh backend.
+* vqe_hardware/: Archives output files and measurement results from successful executions on real IBM quantum processing units.
 
 ## Getting Started
 
