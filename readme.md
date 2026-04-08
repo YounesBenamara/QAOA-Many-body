@@ -49,7 +49,7 @@ Variational_Ising_QPT/
 │   ├── vqe_v2.py
 │   └── vqe_v3_hardware.py
 └── README.md
-
+bash```
 
 ## Getting Started
 
