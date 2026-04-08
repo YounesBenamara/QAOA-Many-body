@@ -52,7 +52,7 @@ Variational_Ising_QPT/
 │   ├── exact_solver.py
 │   ├── g_comparison.py
 │   ├── layers_comparison.py
-│   ├── saturation.md
+│   ├── iterations.md
 │   ├── spsa_optimizer.py
 │   ├── vqe_v1.py
 │   ├── vqe_v2.py
@@ -72,7 +72,7 @@ The implementation is divided between the source logic and the recorded executio
 * spsa_optimizer.py: Defines the stochastic optimizer logic including the adaptive learning rates and gradient estimation used in the variational routines, still in progress.
 * g_comparison.py: Automates the calculation of ground state properties across a range of transverse field values to map the phase transition.
 * layers_comparison.py: Compares circuit performance across different hardware-efficient ansatz depths to find the optimal parameter ratio for the target system.
-* iteration.md: Provides the mathematical background and criteria for the diagnostic tests used to identify optimizer flattening and determine convergence.
+* iterations.md: Provides the mathematical background and criteria for the diagnostic tests used to identify optimizer flattening and determine convergence.
 
 ### Execution results (runs/)
 
@@ -101,13 +101,8 @@ It is recommended to install dependencies in a dedicated virtual environment.
 Parameters must be defined in the configuration block before running:
 * Field strength g: Selected to scan the transition (typically 0 to 2).
 * Layers: Fixed ansatz depth (e.g., 2 layers) to ensure trainability.
-* Iterations: Optimized via the saturation diagnostic to minimize QPU time.
-
-### Running the Code
-
-Execute the desired script from the terminal:
-
-python src/vqe_v2.py
+* Iterations: Optimized via the diagnosis test.
+* Shots: relevant for simulated or real QPUs.
 
 ### Outputs and Data Storage
 
