@@ -66,7 +66,7 @@ which marks the onset of the noise-dominated regime.
 
 Once $k_{\mathrm{opt}}$ is estimated, the production parameters are chosen as follows:
 
-- **Maximum iteration budget**: $K_{\max} = \lfloor 1.2\, k_{\mathrm{opt}} \rfloor$
+- **Maximum iteration budget**: $K_{\max} = \lfloor 1.2 \times k_{\mathrm{opt}} \rfloor$
 
 - **Final averaging window**:
   the Polyak-Ruppert averaging window is chosen within the interval $[k_{\mathrm{opt}}, K_{\max}]$.
