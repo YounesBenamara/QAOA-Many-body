@@ -22,19 +22,29 @@ $$
 \langle E \rangle(k) = \frac{1}{W} \sum_{j=k-W+1}^{k} \mu(j)
 $$
 
-To quantify how fast the optimization is still progressing, we define the discrete slope
+The smoothed energy curve is then fitted by an exponential relaxation model,
+
+$$
+\langle E \rangle(k) \approx E_\infty + A e^{-bk}
+$$
+
+where $E_\infty$ is the asymptotic energy, $A$ is the transient amplitude, and $b$ is an effective decay rate.
+
+If this description is valid, then the slope is also expected to decay exponentially with the same rate $b$. In practice, we work with the discrete slope
 
 $$
 \Delta(k) = \left| \langle E \rangle(k) - \langle E \rangle(k-1) \right|
 $$
 
-In practice, $\Delta(k)$ is often well approximated by the empirical model
+which is noisier than the energy itself because finite differences amplify residual fluctuations.
+
+To model the late-time behavior of this slope, we use the empirical form
 
 $$
 \Delta(k) \approx a e^{-bk} + c
 $$
 
-where $a$ is the initial transient amplitude, $b$ an effective decay rate, and $c$ the asymptotic floor.
+where $a$ is the initial slope amplitude, $b$ is the effective decay rate, and $c$ is the residual floor. This model should be understood as an empirical approximation of the convergence trend rather than an exact law.
 
 The characteristic iteration $k_{\mathrm{opt}}$ is then defined as the point where the fitted curve reaches a chosen tolerance $\epsilon$:
 
@@ -65,7 +75,7 @@ Once $k_{\mathrm{opt}}$ is estimated, the production parameters are chosen as fo
   the Polyak-Ruppert averaging window is chosen within the interval $[k_{\mathrm{opt}}, K_{\max}]$.
 
 - **Effective decay rate $b$**:
-  this parameter gives a useful indication of the convergence speed for the chosen optimizer, ansatz, and Hamiltonian.
+  this parameter provides a useful indication of the convergence speed for the chosen optimizer, ansatz, and Hamiltonian.
 
 ## 4. Relevance for VQE
 
