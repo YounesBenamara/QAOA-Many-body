@@ -1,56 +1,80 @@
-# Asymptotic Saturation Test for Stochastic Optimization (VQE)
+# Iteration-Budget Optimization for Stochastic VQE
 
-## 1. Objective of the Method
+## 1. Objective
 
-The Asymptotic Saturation Test is an algorithmic diagnostic procedure designed to rigorously parameterize stochastic optimizers (such as SPSA) within the framework of a Variational Quantum Eigensolver (VQE). 
+This diagnostic is used to choose a suitable number of iterations for stochastic optimizers such as SPSA in the context of the Variational Quantum Eigensolver (VQE).
 
-Its purpose is to replace an empirical approach (arbitrary choice of iteration count) with an analytical stopping criterion. It precisely identifies the moment the algorithm exits its transient descent phase to enter a stationary regime around a local minimum, thereby dictating the optimal iteration budget and the Polyak-Ruppert averaging window.
+Its purpose is to replace an arbitrary iteration count by a data-driven criterion. In practice, it estimates the iteration range beyond which the optimization is no longer improving significantly and becomes dominated by fluctuations. This range is then used to choose both the total iteration budget and the final averaging window.
 
-## 2. Mathematical Formalism
+## 2. Method
 
-The method relies on analyzing the first derivative of the mean energy trajectory from an ensemble of independent optimizations. 
+Let $E_i(k)$ denote the energy measured at iteration $k$ during the $i$-th optimization run. Because SPSA trajectories are noisy and depend strongly on initialization, a single run is not sufficient to estimate the global convergence trend.
 
-Let $E_i(k)$ be the energy evaluated during the $i$-th run at iteration $k$. Given the high variance induced by SPSA's stochasticity (and potentially quantum projection noise), analyzing a single trajectory is insufficient.
+We first average over $M$ independent runs:
 
-**Step 1: Ensemble Average**
-We calculate the average over a batch of $M$ independent optimizations launched from random initial points to extract the global trend:
-$$\mu(k) = \frac{1}{M} \sum_{i=1}^M E_i(k)$$
+$$
+\mu(k) = \frac{1}{M} \sum_{i=1}^M E_i(k)
+$$
 
-**Step 2: Temporal Smoothing (Low-pass filter)**
-To eliminate the residual high-frequency noise from the ensemble average, we apply a moving average over a window of size $W$:
-$$\langle E \rangle(k) = \frac{1}{W} \sum_{j=k-W+1}^k \mu(j)$$
+The averaged trajectory is then smoothed with a moving average of width $W$:
 
-**Step 3: Derivation**
-We compute the absolute discrete derivative of this smoothed trajectory:
-$$\Delta(k) = \left| \frac{d\langle E \rangle}{dk} \right|$$
+$$
+\langle E \rangle(k) = \frac{1}{W} \sum_{j=k-W+1}^{k} \mu(j)
+$$
 
-**Step 4: Exponential Fit and Analytical Saturation Point**
+To quantify how fast the optimization is still progressing, we define the discrete slope
 
-On an ideal statevector simulator, the derivative $\Delta(k)$ decays exponentially. We fit a parametric model to the derivative curve:
-$$\Delta(k) \approx a \cdot e^{-bk} + c$$
+$$
+\Delta(k) = \left| \langle E \rangle(k) - \langle E \rangle(k-1) \right|
+$$
 
-where $a$ is the initial descent amplitude, $b$ is the decay rate, and $c$ is the asymptotic noise floor. The fit quality is assessed via the coefficient of determination $R^2$.
+In practice, $\Delta(k)$ is often well approximated by the empirical model
 
-The geometric saturation point $k_{\text{flat}}$ is then obtained **analytically** by solving for the iteration where the fitted curve crosses a critical threshold $\epsilon$ (typically $10^{-3}$, corresponding to chemical accuracy):
+$$
+\Delta(k) \approx a e^{-bk} + c
+$$
 
-$$k_{\text{flat}} = \frac{1}{b} \ln\left(\frac{a}{\epsilon - c}\right)$$
+where $a$ is the initial transient amplitude, $b$ an effective decay rate, and $c$ the asymptotic floor.
 
-This approach is deterministic and immune to the stochastic fluctuations that plague threshold-crossing methods (where a single noisy spike can shift the detection point by tens of iterations).
+The characteristic iteration $k_{\mathrm{opt}}$ is then defined as the point where the fitted curve reaches a chosen tolerance $\epsilon$:
 
-**Fallback:** If the asymptotic floor $c \geq \epsilon$ (as may occur on a noisy QPU where shot noise dominates), the threshold is never crossed. In this case, we use the point where the exponential component has decayed to the level of the floor itself: $k_{\text{flat}} = \frac{1}{b}\ln(a/c)$, indicating the shot-noise-limited regime.
+$$
+k_{\mathrm{opt}} = \frac{1}{b} \ln\left(\frac{a}{\epsilon - c}\right)
+$$
+
+provided that $c < \epsilon$.
+
+If $c \geq \epsilon$, the threshold is never reached. In that case, we define
+
+$$
+k_{\mathrm{opt}} = \frac{1}{b}\ln\left(\frac{a}{c}\right)
+$$
+
+which marks the onset of the noise-dominated regime.
 
 ## 3. Derived Parameters
 
-Once $k_{\text{flat}}$ is identified via this diagnostic, the production parameters are set as follows:
+Once $k_{\mathrm{opt}}$ is estimated, the production parameters are chosen as follows:
 
-* **Maximum Iteration Budget ($K_{\max}$)**: Defined with a safety margin beyond the saturation point, typically $K_{\max} = \lfloor 1.2 \times k_{\text{flat}} \rfloor$. This guarantees that all runs reach the stationary regime without wasting computational resources.
-* **Extraction Window (Polyak-Ruppert)**: The size of the final averaging window, used to evaluate the true minimum of a run, is set to strictly cover the range $[k_{\text{flat}}, K_{\max}]$. Taking a wider window would include the descent phase and introduce a positive bias.
-* **Decay Rate $b$**: This parameter itself is physically meaningful — it characterizes how quickly Qiskit's SPSA auto-calibration converges on the given ansatz/Hamiltonian combination. A larger $b$ indicates a well-conditioned energy landscape.
+- **Maximum iteration budget**:
+  $$
+  K_{\max} = \lfloor 1.2 \, k_{\mathrm{opt}} \rfloor
+  $$
 
-## 4. Algorithmic and Physical Relevance
+- **Final averaging window**:
+  the Polyak-Ruppert averaging window is chosen within the interval $[k_{\mathrm{opt}}, K_{\max}]$.
 
-This method is particularly relevant in the quantum computing context for several reasons:
+- **Effective decay rate $b$**:
+  this parameter gives a useful indication of the convergence speed for the chosen optimizer, ansatz, and Hamiltonian.
 
-1.  **Prevention of Arbitrary Truncation:** The energy landscapes of hardware-efficient ansätze (HEA) are highly non-convex. The "burn-in" time varies drastically depending on the initial position. This test ensures the algorithm is not artificially interrupted mid-descent, which would heavily bias the evaluation of the minima.
-2.  **Identification of the Shot-Noise Limit:** On a QPU or a noisy simulator, the test physically identifies the precision limit. The derivative $\Delta(k)$ will not tend to zero but will hit a floor dominated by the standard error of the measurement (proportional to $1/\sqrt{N_{\text{shots}}}$). Continuing optimization beyond this point is analytically useless, as SPSA gradient fluctuations become indistinguishable from hardware noise.
-3.  **Simulator Validation:** Analyzing the tail of $\Delta(k)$ immediately discriminates the type of environment. A continuous exponential decay characterizes a statevector (ideal) simulation, whereas horizontal flattening characterizes an environment subjected to projective or hardware noise.
+## 4. Relevance for VQE
+
+This diagnostic is useful in the VQE setting for three main reasons:
+
+1. It avoids choosing the iteration budget arbitrarily.
+2. It indicates when further optimization becomes dominated by statistical or hardware noise.
+3. It provides a simple way to compare convergence behavior across simulators and hardware backends.
+
+## 5. Interpretation
+
+This method should be viewed as an empirical calibration tool rather than a rigorous convergence test. Its role is to estimate a practical iteration budget for stochastic VQE runs.
