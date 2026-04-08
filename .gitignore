@@ -13,22 +13,13 @@ dist/
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
-# --- Données et Résultats (Lourds ou locaux) ---
-src/datasets/
-datasets/
-src/figures/
-figures/
-*.png
-*.pdf
-*.h5
-*.csv
 
-# --- IDE (VS Code / PyCharm) ---
+# --- IDE (VS Code) ---
 .vscode/
 .idea/
 .history/
 
-# --- Sécurité & Config (NE JAMAIS PUSHER) ---
+# --- Security and configuration ---
 .env
 qiskit-runtime.json
 setup_ibm.py
