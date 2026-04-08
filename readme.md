@@ -94,13 +94,28 @@ A Python environment with the following packages is required:
 
 It is recommended to install dependencies in a dedicated virtual environment.
 
-### Running the Diagnostic
+## Execution
 
-To estimate the iteration budget needed for a given simulator or hardware backend, the asymptotic saturation diagnostic implemented in the VQE scripts can be used:
+### Pre-execution Calibration
 
-1. Set the diagnostic flag to `True` in the configuration block of the relevant source file.
-2. Run the script.
-3. Analyze the generated convergence curve and exponential fit to estimate the onset of saturation.
+Parameters must be defined in the configuration block before running:
+* Field strength g: Selected to scan the transition (typically 0 to 2).
+* Layers: Fixed ansatz depth (e.g., 2 layers) to ensure trainability.
+* Iterations: Optimized via the saturation diagnostic to minimize QPU time.
+
+### Running the Code
+
+Execute the desired script from the terminal:
+
+python src/vqe_v2.py
+
+### Outputs and Data Storage
+
+Each run generates two files in the runs/ directory:
+* JSON (.json): Stores metadata, backend information, and the full energy convergence history.
+* NumPy (.npy): Stores the optimized parameter vector theta. These angles allow for the reconstruction of the ground state to compute secondary observables like entanglement entropy without repeating the optimization.
+
+Visual records are exported to the figures/ directory.
 
 ## Key Results Summary
 
