@@ -23,7 +23,7 @@ The repository explores the ability of noisy intermediate-scale quantum (NISQ) a
 
 ## Physical Model
 
-The system considered is a ring of $N$ spin-$\tfrac{1}{2}$ particles with periodic boundary conditions, governed by the Hamiltonian
+The system considered is a ring of $N$ spin- $\tfrac{1}{2}$ particles with periodic boundary conditions, governed by the Hamiltonian
 
 $$
 H(g) = - \sum_{i=0}^{N-1} Z_i Z_{i+1} - g \sum_{i=0}^{N-1} X_i
